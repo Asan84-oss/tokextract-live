@@ -48,6 +48,43 @@ export function validateTikTokUrl(raw: string): string | null {
   return null;
 }
 
+/* ── payload normalization ──────────────────────────────────────
+   The RapidAPI mirror of TikWM usually answers with the envelope
+   { code, msg, data: {…} } — but some of its proxy layouts wrap
+   the media object inside an array: a top-level array, a
+   `data: [ … ]` collection, or a nested `videos` / `items` /
+   `list` key. unwrapPayload descends through every one of those
+   shapes until it reaches a plain object carrying media fields,
+   preferring whichever element actually exposes a usable source. */
+
+const MEDIA_KEYS = ["hdplay", "play", "hd_play", "video", "url", "video_url", "music"] as const;
+
+function isRecord(v: unknown): v is Record<string, any> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function unwrapPayload(json: any): Record<string, any> {
+  if (json == null) return {};
+  let node: any = json;
+  for (let depth = 0; depth < 6; depth++) {
+    if (Array.isArray(node)) {
+      const objects = node.filter(isRecord);
+      if (objects.length === 0) return {};
+      const withMedia = objects.find((o) =>
+        MEDIA_KEYS.some((k) => typeof o[k] === "string" && o[k].length > 0),
+      );
+      node = withMedia ?? objects[0];
+      continue;
+    }
+    if (!isRecord(node)) return {};
+    if (MEDIA_KEYS.some((k) => typeof node[k] === "string" && node[k].length > 0)) return node;
+    const nested = node.data ?? node.videos ?? node.items ?? node.list ?? node.result;
+    if (nested === node || nested === undefined) return node;
+    node = nested;
+  }
+  return isRecord(node) ? node : {};
+}
+
 /* ── live extraction via RapidAPI ─────────────────────────────── */
 
 export async function extractTikTok(url: string): Promise<ExtractResult> {
@@ -90,7 +127,13 @@ export async function extractTikTok(url: string): Promise<ExtractResult> {
   }
 
   // TikWM envelope: { code, msg, processed_time, data } — code !== 0 means failure.
-  if (json && typeof json === "object" && "code" in json && Number(json.code) !== 0) {
+  if (
+    json &&
+    typeof json === "object" &&
+    !Array.isArray(json) &&
+    "code" in json &&
+    Number(json.code) !== 0
+  ) {
     throw new Error(
       typeof json.msg === "string" && json.msg.length > 0
         ? `The service could not process that link: ${json.msg}`
@@ -106,7 +149,9 @@ export async function extractTikTok(url: string): Promise<ExtractResult> {
     );
   }
 
-  const d = json?.data ?? json ?? {};
+  // Normalize {code,msg,data} envelopes, array-wrapped payloads and
+  // nested videos/items/list collections into a single media object.
+  const d = unwrapPayload(json);
   // hdplay = HD no-watermark render, play = SD no-watermark render.
   // wmplay is deliberately NEVER used — it carries the watermark.
   const videoUrl: string = d.hdplay || d.play || d.hd_play || d.video || d.url || "";
