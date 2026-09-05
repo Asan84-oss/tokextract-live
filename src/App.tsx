@@ -23,6 +23,7 @@ import {
   extractTikTok,
   formatDuration,
   hasCredentials,
+  RAPIDAPI_HOST,
   slugify,
   validateTikTokUrl,
   type ExtractResult,
@@ -46,7 +47,6 @@ interface HistoryItem {
   videoUrl: string;
   audioUrl: string;
   duration?: number;
-  demo: boolean;
   ts: number;
 }
 
@@ -278,7 +278,7 @@ function DownloadButton({ accent, icon, label, sub, disabled, resolve, onFail }:
 
 /* ── result thumbnail ─────────────────────────────────────────── */
 
-function Thumb({ cover, title, duration, demo }: { cover: string; title: string; duration?: number; demo: boolean }) {
+function Thumb({ cover, title, duration }: { cover: string; title: string; duration?: number }) {
   const [failed, setFailed] = useState(false);
   const dur = formatDuration(duration);
   return (
@@ -294,11 +294,6 @@ function Thumb({ cover, title, duration, demo }: { cover: string; title: string;
       <span className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full border border-ink/25 bg-canvas/55 backdrop-blur-sm transition-transform duration-300 hover:scale-110">
         <IconPlay className="h-5 w-5 translate-x-[1px] text-ink" />
       </span>
-      {demo && (
-        <span className="absolute left-2 top-2 rounded-sm bg-warn px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-canvas">
-          Demo
-        </span>
-      )}
       {dur && (
         <span className="absolute bottom-2 left-2 rounded-sm bg-canvas/80 px-1.5 py-0.5 font-display text-[10px] font-bold text-ink">
           {dur}
@@ -372,7 +367,6 @@ export default function App() {
         videoUrl: res.videoUrl,
         audioUrl: res.audioUrl,
         duration: res.duration,
-        demo: res.demo,
         ts: Date.now(),
       };
       setHistory((prev) => {
@@ -417,7 +411,6 @@ export default function App() {
       videoUrl: item.videoUrl,
       audioUrl: item.audioUrl,
       duration: item.duration,
-      demo: item.demo,
       sourceUrl: item.url,
     });
     setPhase("success");
@@ -462,19 +455,19 @@ export default function App() {
           <span
             className={cx(
               "flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em]",
-              hasCredentials ? "border-cyan/40 text-cyan" : "border-warn/40 text-warn",
+              hasCredentials ? "border-cyan/40 text-cyan" : "border-danger/40 text-danger",
             )}
             title={
               hasCredentials
-                ? "RapidAPI credentials detected in the environment"
-                : "No API credentials found — running on bundled demo media. Set VITE_RAPIDAPI_KEY and VITE_RAPIDAPI_HOST to go live."
+                ? `Live — queries routed to https://${RAPIDAPI_HOST}`
+                : "VITE_RAPIDAPI_KEY is missing from the build environment. Set it in .env and rebuild to go live."
             }
           >
             <span
-              className={cx("dot-live h-1.5 w-1.5 rounded-full", hasCredentials ? "bg-cyan" : "bg-warn")}
+              className={cx("dot-live h-1.5 w-1.5 rounded-full", hasCredentials ? "bg-cyan" : "bg-danger")}
               style={hasCredentials ? undefined : { animationName: "none" }}
             />
-            {hasCredentials ? "API Live" : "Demo Mode"}
+            {hasCredentials ? "API Live" : "Config Error"}
           </span>
         </div>
       </header>
@@ -612,9 +605,9 @@ export default function App() {
               focus · <kbd className="rounded-sm border border-line bg-panel px-1.5 py-0.5 font-body text-[10px] text-mute">Enter</kbd> to extract
             </p>
             {!hasCredentials && (
-              <p className="flex items-center gap-1.5 text-[11px] text-warn">
+              <p className="flex items-center gap-1.5 text-[11px] font-medium text-danger">
                 <IconInfo className="h-3.5 w-3.5 shrink-0" />
-                Demo mode — bundled sample media. Set VITE_RAPIDAPI_KEY + VITE_RAPIDAPI_HOST to extract live TikToks.
+                RapidAPI credentials missing — set VITE_RAPIDAPI_KEY + VITE_RAPIDAPI_HOST in .env and rebuild.
               </p>
             )}
           </div>
@@ -691,7 +684,7 @@ export default function App() {
             {!loading && phase === "success" && result && (
               <article key={result.sourceUrl + result.title} className="animate-card-in overflow-hidden rounded-lg border border-line bg-panel shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
                 <div className="flex flex-col sm:flex-row">
-                  <Thumb cover={result.cover} title={result.title} duration={result.duration} demo={result.demo} />
+                  <Thumb cover={result.cover} title={result.title} duration={result.duration} />
                   <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="rounded-sm bg-cyan/12 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-cyan ring-1 ring-cyan/30">
@@ -804,11 +797,7 @@ export default function App() {
                       <span className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-canvas/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
                         <IconPlay className="h-5 w-5 text-ink" />
                       </span>
-                      {item.demo && (
-                        <span className="absolute left-1.5 top-1.5 rounded-sm bg-warn px-1 py-0.5 text-[8px] font-bold uppercase tracking-widest text-canvas">
-                          Demo
-                        </span>
-                      )}
+
                     </div>
                     <div className="p-2.5">
                       <p className="truncate text-[12px] font-medium text-ink">{item.title}</p>
