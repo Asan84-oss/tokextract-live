@@ -5,10 +5,14 @@
    browser-safe equivalent of process.env). Both VITE_-prefixed
     and plain names are accepted. No demo mode, no mock data —
     every query is routed to the production host configured in
-    the environment (tikwm-api.p.rapidapi.com on rapidapi.com).
-    Per the TikWM spec the link ships as a `url` query parameter
-    with `hd=1` for the clean HD render; the live handler path is
-    auto-resolved on first use, then locked for the session.   ════════════════════════════════════════════════════════════════ */
+    the environment: tiktok-video-no-watermark2.p.rapidapi.com
+    (yi005 — the RapidAPI mirror of the TikWM engine). Its
+    verified route is GET /?url=…&hd=1 at the host root with
+    headers X-RapidAPI-Key, X-RapidAPI-Host and
+    Content-Type: application/json. The response follows the
+    TikWM envelope { code, msg, data: { hdplay, play, music,
+    cover, title, duration } }; the handler path is locked on
+    first use so later mirror builds can't 404 the app.   ════════════════════════════════════════════════════════════════ */
 
 export interface ExtractResult {
   title: string;
@@ -23,7 +27,8 @@ const env: Record<string, string | undefined> =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
 
 export const RAPIDAPI_KEY: string = env.VITE_RAPIDAPI_KEY || env.RAPIDAPI_KEY || "";
-export const RAPIDAPI_HOST: string = env.VITE_RAPIDAPI_HOST || env.RAPIDAPI_HOST || "tikwm-api.p.rapidapi.com";
+export const RAPIDAPI_HOST: string =
+  env.VITE_RAPIDAPI_HOST || env.RAPIDAPI_HOST || "tiktok-video-no-watermark2.p.rapidapi.com";
 export const hasCredentials: boolean = RAPIDAPI_KEY.length > 0 && RAPIDAPI_HOST.length > 0;
 
 const API_ORIGIN = `https://${RAPIDAPI_HOST}`;
@@ -88,16 +93,18 @@ function unwrapPayload(json: any): Record<string, any> {
 }
 
 /* ── live route resolution ──────────────────────────────────────
-   The TikWM mirror flattens its handlers at the host root, and the
-   exact extraction path varies between mirror builds — `/video/`
-   returns 404 on this one. We probe the standard TikWM extraction
-   routes in preference order, lock onto whichever answers with a
-   real response, and route every subsequent query straight at
-   that exact path. Per the TikWM specification the link ships as
-   a `url` query parameter with `hd=1` (clean HD render); the
-   spec-sanctioned form-body POST is the final fallback.          */
+   This provider (tiktok-video-no-watermark2.p.rapidapi.com)
+   serves the extractor at the host ROOT — the verified working
+   request is GET /?url=…&hd=1. `/` is therefore probed first;
+   `/api/` and `/video/` remain as fallbacks for other TikWM
+   mirror builds in case the host is swapped again. Whichever
+   route answers with a real response is locked for the session,
+   and every subsequent query fires straight at that exact path.
+   Per the TikWM specification the link ships as a `url` query
+   parameter with `hd=1` (clean HD render); the spec-sanctioned
+   form-body POST is the final fallback.                          */
 
-const EXTRACTION_PATHS = ["/api/", "/", "/video/"] as const;
+const EXTRACTION_PATHS = ["/", "/api/", "/video/"] as const;
 let lockedPath: string | null = null;
 
 async function requestExtraction(tiktokUrl: string): Promise<Response> {
@@ -105,6 +112,7 @@ async function requestExtraction(tiktokUrl: string): Promise<Response> {
   const headers: Record<string, string> = {
     "x-rapidapi-key": RAPIDAPI_KEY,
     "x-rapidapi-host": RAPIDAPI_HOST,
+    "Content-Type": "application/json",
   };
 
   const order: string[] = lockedPath
@@ -151,7 +159,7 @@ async function requestExtraction(tiktokUrl: string): Promise<Response> {
   }
 
   throw new Error(
-    `The host ${RAPIDAPI_HOST} returned 404 on every standard TikWM route (/api/, /, /video/). Confirm your RapidAPI subscription includes the video extraction endpoint for this provider.`,
+    `The host ${RAPIDAPI_HOST} returned 404 on every standard TikWM route (/, /api/, /video/). Confirm your RapidAPI subscription includes the video extraction endpoint for this provider.`,
   );
 }
 

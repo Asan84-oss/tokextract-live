@@ -14,7 +14,7 @@ The client reads keys from environment variables only — see `src/lib/api.ts`:
 
 ```bash
 VITE_RAPIDAPI_KEY=***    # your RapidAPI key
-VITE_RAPIDAPI_HOST=***   # tikwm-api.p.rapidapi.com
+VITE_RAPIDAPI_HOST=***   # tiktok-video-no-watermark2.p.rapidapi.com
 ```
 
 > Vite exposes env vars to the browser via `import.meta.env` (the browser-safe equivalent of
@@ -22,10 +22,12 @@ VITE_RAPIDAPI_HOST=***   # tikwm-api.p.rapidapi.com
 > also checks the unprefixed `RAPIDAPI_KEY` / `RAPIDAPI_HOST` names in case your dashboard
 > injects them under that convention. Copy `.env.example` to `.env` and fill in the values.
 > Demo mode has been removed — every query is routed live to
-> `https://tikwm-api.p.rapidapi.com`. The TikWM link ships as a `url` query parameter with
-> `hd=1`; the exact handler path (`/api/`, `/`, …) is auto-resolved on first use and locked
-> for the session, so a dead path on the mirror can never 404 the whole app. If credentials
-> are missing at build time, the app surfaces a clear **Config Error** state instead of fake data.
+> `https://tiktok-video-no-watermark2.p.rapidapi.com` (the TikWM engine on RapidAPI).
+> The link ships as a `url` query parameter with `hd=1` and headers `X-RapidAPI-Key`,
+> `X-RapidAPI-Host`, `Content-Type: application/json`. The verified handler path is the
+> host root (`GET /?url=…&hd=1`); it is locked on first use, with `/api/` and `/video/`
+> kept as fallbacks so a future host swap can never 404 the app. If credentials are
+> missing at build time, the app surfaces a clear **Config Error** state instead of fake data.
 
 ## AdSense integration points
 
