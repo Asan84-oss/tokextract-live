@@ -28,18 +28,27 @@
         color: #f4f4f6;
       }
     </style>
+    <!-- Google AdSense · site connection (ca-pub-4086555246252982) -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4086555246252982"
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
     <!-- ════════════════════════════════════════════════════════════════
          TOKEXTRACT · AD INTEGRATION MAP
-         The app renders three AdSense-ready placeholder containers.
-         Each one carries an HTML comment marker inside it where you
-         drop your <ins class="adsbygoogle"> layout script:
+         AdSense is wired: the connection script (ca-pub-4086555246252982)
+         loads in <head>, and three responsive units render via
+         src/components/AdSlot.tsx (push() runs in useEffect):
 
            1) #ad-slot-top      → above the URL form entry
            2) #ad-slot-results  → directly below the download triggers
            3) #ad-slot-sticky   → sticky container on the bottom rail
+
+         After unit approval, replace data-ad-slot="default" with the
+         real slot IDs inside AdSlot.tsx.
          ════════════════════════════════════════════════════════════════ -->
     <script type="module" src="/src/main.tsx"></script>
   </body>

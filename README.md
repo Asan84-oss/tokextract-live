@@ -29,10 +29,13 @@ VITE_RAPIDAPI_HOST=***   # tiktok-video-no-watermark2.p.rapidapi.com
 > kept as fallbacks so a future host swap can never 404 the app. If credentials are
 > missing at build time, the app surfaces a clear **Config Error** state instead of fake data.
 
-## AdSense integration points
+## AdSense integration
 
-Three placeholder containers ship with the layout, each containing an HTML comment marker
-where you drop your `<ins class="adsbygoogle">` script:
+The site connection script (`ca-pub-4086555246252982`) loads in `<head>`, and three
+responsive units (`data-ad-format="auto"`, `data-full-width-responsive`) render from
+`src/components/AdSlot.tsx`. React doesn't execute injected `<script>` tags, so each
+unit's `(adsbygoogle || []).push({})` runs programmatically in `useEffect`. Once units
+are approved, replace `data-ad-slot="default"` with your real slot IDs.
 
 | Container         | Location                              | Suggested size |
 | ----------------- | ------------------------------------- | -------------- |
