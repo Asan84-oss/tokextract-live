@@ -450,6 +450,7 @@ export default function App() {
           <nav className="hidden items-center gap-7 text-[12px] font-medium uppercase tracking-[0.16em] text-mute md:flex">
             <a href="#extractor" className="transition-colors hover:text-cyan">Extractor</a>
             <a href="#how" className="transition-colors hover:text-cyan">Pipeline</a>
+            <a href="#guide" className="transition-colors hover:text-cyan">Guide</a>
             <a href="#faq" className="transition-colors hover:text-cyan">FAQ</a>
           </nav>
           <span
@@ -495,9 +496,7 @@ export default function App() {
                 <span className="text-mag">//</span> short-form media extractor
               </p>
               <h1 className="font-display mt-4 text-4xl font-black leading-[1.04] tracking-tight sm:text-5xl lg:text-6xl">
-                Paste a link.
-                <br />
-                Get <span className="text-cyan">clean</span> <span className="text-mag">files</span>.
+                TokExtract: TikTok Downloader <span className="text-cyan">No Watermark</span>
               </h1>
               <p className="mt-5 max-w-lg text-sm leading-relaxed text-mute sm:text-base">
                 TokExtract strips the watermark off any TikTok and hands you the raw HD video plus an MP3 of the
@@ -886,6 +885,98 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* ── how-to-use guide · long-tail SEO copy ──────────── */}
+      <section id="guide" className="relative z-10 border-t border-line bg-panel/40">
+        <div className="bg-grid-faint pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+        <div className="relative mx-auto max-w-5xl px-5 py-16 sm:py-20">
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-mag" data-reveal>
+            <span className="text-cyan">//</span> the three-tap pipeline
+          </p>
+
+          <div className="mt-7 grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+            {/* ── step rail ── */}
+            <div data-reveal>
+              <h3 className="font-display text-2xl font-black leading-tight tracking-tight sm:text-3xl">
+                How to Download TikTok Videos <span className="text-cyan">Without Watermark</span>
+              </h3>
+              <ol className="mt-9 space-y-8">
+                {[
+                  {
+                    title: "Copy Link",
+                    body: "Open the TikTok app or website, find your favorite video, and copy its link sharing URL.",
+                  },
+                  {
+                    title: "Paste URL",
+                    body: "Return to TokExtract, paste the copied link right into our secure layout input field, and press the neon Extract button.",
+                  },
+                  {
+                    title: "Save HD File",
+                    body: "Our online extraction pipeline strips tracking parameters and watermarks natively. Click Download Video to save the raw source MP4 stream directly to your PC, iPhone, or Android camera roll for free. You can also click Download Audio to extract the background MP3 sound track instantly.",
+                  },
+                ].map((step, i) => (
+                  <li key={step.title} className="group flex gap-5 sm:gap-7">
+                    <span
+                      aria-hidden="true"
+                      className="font-display text-outline w-14 shrink-0 text-4xl font-black leading-none transition-transform duration-300 group-hover:-translate-y-1 sm:w-20 sm:text-5xl"
+                    >
+                      0{i + 1}
+                    </span>
+                    <p className="text-sm leading-relaxed text-mute sm:text-[15px]">
+                      <strong className="font-bold text-ink">
+                        {i + 1}. {step.title}:{" "}
+                      </strong>
+                      {step.body}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {/* ── why-panel ── */}
+            <aside
+              data-reveal
+              className="relative self-start overflow-hidden rounded-lg border border-line bg-panel p-7 sm:p-8"
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(0,242,254,0.16),transparent_70%)]"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-20 -left-14 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(254,9,121,0.14),transparent_70%)]"
+              />
+              <h3 className="font-display relative text-xl font-black tracking-tight sm:text-2xl">
+                Why use an Online <span className="text-mag">TikTok Saver?</span>
+              </h3>
+              <p className="relative mt-5 text-sm leading-relaxed text-mute sm:text-[15px]">
+                Many creators in the US and UK need to repurpose their clips as YouTube Shorts or Instagram Reels.
+                Our platform allows you to download slideshow photos and full HD videos online without losing file
+                quality or dealing with annoying floating logos.
+              </p>
+              <ul className="relative mt-6 flex flex-wrap gap-2">
+                {[
+                  "no watermark",
+                  "HD MP4",
+                  "MP3 converter",
+                  "slideshow photos",
+                  "YouTube Shorts",
+                  "Instagram Reels",
+                  "iPhone & Android",
+                  "free online",
+                ].map((tag) => (
+                  <li
+                    key={tag}
+                    className="cursor-default rounded-sm border border-line-2 bg-panel-2 px-2.5 py-1 text-[11px] font-medium text-mute transition-colors duration-200 hover:border-cyan/50 hover:text-cyan"
+                  >
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </div>
+        </div>
+      </section>
 
       {/* ── footer ─────────────────────────────────────────── */}
       <footer className={cx("relative z-10 border-t border-line transition-all", stickyOpen ? "pb-36 sm:pb-32" : "pb-10")}>
