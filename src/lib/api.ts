@@ -3,10 +3,12 @@
    Credentials are injected at build time from environment
    variables only (Vite exposes them via import.meta.env, the
    browser-safe equivalent of process.env). Both VITE_-prefixed
-   and plain names are accepted. No demo mode, no mock data —
-   every query is routed to the production endpoint:
-   https://tikwm-api.p.rapidapi.com/video/?url=…&hd=1
-   ════════════════════════════════════════════════════════════════ */
+    and plain names are accepted. No demo mode, no mock data —
+    every query is routed to the production host configured in
+    the environment (tikwm-api.p.rapidapi.com on rapidapi.com).
+    Per the TikWM spec the link ships as a `url` query parameter
+    with `hd=1` for the clean HD render; the live handler path is
+    auto-resolved on first use, then locked for the session.   ════════════════════════════════════════════════════════════════ */
 
 export interface ExtractResult {
   title: string;
@@ -85,6 +87,74 @@ function unwrapPayload(json: any): Record<string, any> {
   return isRecord(node) ? node : {};
 }
 
+/* ── live route resolution ──────────────────────────────────────
+   The TikWM mirror flattens its handlers at the host root, and the
+   exact extraction path varies between mirror builds — `/video/`
+   returns 404 on this one. We probe the standard TikWM extraction
+   routes in preference order, lock onto whichever answers with a
+   real response, and route every subsequent query straight at
+   that exact path. Per the TikWM specification the link ships as
+   a `url` query parameter with `hd=1` (clean HD render); the
+   spec-sanctioned form-body POST is the final fallback.          */
+
+const EXTRACTION_PATHS = ["/api/", "/", "/video/"] as const;
+let lockedPath: string | null = null;
+
+async function requestExtraction(tiktokUrl: string): Promise<Response> {
+  const params = new URLSearchParams({ url: tiktokUrl, hd: "1" });
+  const headers: Record<string, string> = {
+    "x-rapidapi-key": RAPIDAPI_KEY,
+    "x-rapidapi-host": RAPIDAPI_HOST,
+  };
+
+  const order: string[] = lockedPath
+    ? [lockedPath, ...EXTRACTION_PATHS.filter((p) => p !== lockedPath)]
+    : [...EXTRACTION_PATHS];
+
+  let networkFault = false;
+  for (const path of order) {
+    let res: Response;
+    try {
+      res = await fetch(`${API_ORIGIN}${path}?${params.toString()}`, { method: "GET", headers });
+    } catch {
+      networkFault = true;
+      continue;
+    }
+    // RapidAPI answers 404 for paths that don't exist on this host —
+    // keep probing. Anything else (200, auth fault, rate limit…)
+    // means the live handler has been found.
+    if (res.status === 404 || res.status === 405) continue;
+    lockedPath = path;
+    console.info(`[TokExtract] extraction route locked: ${API_ORIGIN}${path}`);
+    return res;
+  }
+
+  if (networkFault) {
+    throw new Error("Network fault — the extraction service could not be reached. Check your connection and retry.");
+  }
+
+  // Every GET probe hit a dead path → try the TikWM form-body POST.
+  let res: Response;
+  try {
+    res = await fetch(`${API_ORIGIN}${order[0]}`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+  } catch {
+    throw new Error("Network fault — the extraction service could not be reached. Check your connection and retry.");
+  }
+  if (res.status !== 404 && res.status !== 405) {
+    lockedPath = order[0];
+    console.info(`[TokExtract] extraction route locked (POST): ${API_ORIGIN}${order[0]}`);
+    return res;
+  }
+
+  throw new Error(
+    `The host ${RAPIDAPI_HOST} returned 404 on every standard TikWM route (/api/, /, /video/). Confirm your RapidAPI subscription includes the video extraction endpoint for this provider.`,
+  );
+}
+
 /* ── live extraction via RapidAPI ─────────────────────────────── */
 
 export async function extractTikTok(url: string): Promise<ExtractResult> {
@@ -94,20 +164,7 @@ export async function extractTikTok(url: string): Promise<ExtractResult> {
     );
   }
 
-  const endpoint = `${API_ORIGIN}/video/?url=${encodeURIComponent(url.trim())}&hd=1`;
-
-  let res: Response;
-  try {
-    res = await fetch(endpoint, {
-      method: "GET",
-      headers: {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": RAPIDAPI_HOST,
-      },
-    });
-  } catch {
-    throw new Error("Network fault — the extraction service could not be reached. Check your connection and retry.");
-  }
+  const res = await requestExtraction(url.trim());
 
   if (res.status === 401 || res.status === 403) {
     throw new Error("The RapidAPI key was rejected (HTTP " + res.status + "). Verify VITE_RAPIDAPI_KEY and your API subscription.");
