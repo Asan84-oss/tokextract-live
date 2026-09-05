@@ -426,7 +426,7 @@ export default function App() {
     setBanner({
       kind: "warn",
       title: "Direct save was blocked by the CDN",
-      detail: `${message} Use the raw source link below — right-click it and choose “Save link as…” to grab the file.`,
+      detail: `${message} If no tab appeared, open the raw source link below — right-click it and choose “Save link as…” to grab the file.`,
       link: directUrl,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });

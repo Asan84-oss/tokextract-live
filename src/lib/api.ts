@@ -242,14 +242,39 @@ export async function extractTikTok(url: string): Promise<ExtractResult> {
    Instead of letting the browser navigate away to the CDN URL,
    we fetch the media into a Blob, mint a local object URL and
    programmatically click a hidden <a download> — guaranteeing an
-   in-browser file save.                                          */
+   in-browser file save.
+
+   CORS safety net: TikTok's CDN occasionally refuses cross-origin
+   reads, which makes fetch(cdnUrl) throw a network error. When
+   that happens we automatically pop the raw source in a new tab
+   (the browser can play + save it natively) and re-throw so the
+   on-page yellow fallback banner stays visible with the manual
+   link. The call happens inside the user's transient-activation
+   window, so popup blockers almost never intercept it.          */
 
 export async function downloadMedia(
   url: string,
   filename: string,
   onProgress?: (progress: number | null) => void,
 ): Promise<void> {
-  const response = await fetch(url, { mode: "cors" });
+  let response: Response;
+  try {
+    response = await fetch(url, { mode: "cors" });
+  } catch {
+    // Network / CORS block from the CDN — auto-open the raw source
+    // in a new tab so the user can save it from the player menu.
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (win) {
+      console.info("[TokExtract] CDN blocked the in-page fetch — raw source opened in a new tab.");
+    } else {
+      console.warn("[TokExtract] window.open was suppressed by a popup blocker — falling back to the on-page link.");
+    }
+    throw new Error(
+      win
+        ? "TikTok's CDN blocked the background fetch, so the raw source opened in a new tab — save it from the player menu."
+        : "TikTok's CDN blocked the background fetch and your browser suppressed the new tab — use the raw source link below.",
+    );
+  }
   if (!response.ok) throw new Error(`The media source responded with HTTP ${response.status}.`);
 
   const total = Number(response.headers.get("content-length")) || null;
